@@ -1,4 +1,4 @@
-# Toros 18 · ¿Qué tan bueno va a ser este toro a los 18 meses?
+# Toros  · ¿Qué tan bueno va a ser este toro a los 18 meses?
 
 Aplicación web del **Trabajo Práctico 4** de *Aprendizaje Automático y Grandes Datos* (Licenciatura en Agroinformática, UNRaf, 2026).
 
