@@ -1,9 +1,9 @@
-# Toros  · ¿Qué tan bueno va a ser este toro a los 18 meses?
+# Toros 18 · ¿Qué tan bueno va a ser este toro a los 18 meses?
 
 Aplicación web del **Trabajo Práctico 4** de *Aprendizaje Automático y Grandes Datos* (Licenciatura en Agroinformática, UNRaf, 2026).
 
 **Autores:** Gino Ficetto y Bautista Ferrer
-**Aplicación publicada:** _(link de Streamlit Community Cloud)_
+**Aplicación publicada:** https://toros-app-unraf.streamlit.app/
 
 ## Qué hace
 
@@ -55,7 +55,7 @@ requirements.txt            librerías con versión fija
 Hace falta Python 3.12 o 3.13.
 
 ```bash
-git clone <link de este repositorio>
+git clone https://github.com/GinoFicetto/toros-app.git
 cd toros-app
 python -m venv .venv
 # Windows: .venv\Scripts\activate      Linux o Mac: source .venv/bin/activate
