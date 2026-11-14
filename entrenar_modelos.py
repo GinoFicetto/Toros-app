@@ -1,3 +1,19 @@
+"""
+Entrena y guarda los modelos que usa la aplicación (TP4).
+
+Son los modelos elegidos en los TP anteriores, con los mismos datos, variables y semilla:
+  - TP2 (regresión):     regresión lineal múltiple -> DEP de peso a los 18 meses (kg)
+  - TP3 (clasificación): regresión logística       -> probabilidad de estar en el top 10 % a los 18 meses
+  - TP3 (clustering):    K-Means con k = 3         -> perfil del toro (crecimiento, materno o generación anterior)
+
+Para cada raza se hace lo mismo:
+  1. Se repite la evaluación del TP (partición 80/20, semilla 2026) para guardar las métricas de prueba.
+  2. Se reentrena el modelo final con todos los toros de la raza (los hiperparámetros no cambian).
+  3. Se guardan los rangos de cada variable, los residuos fuera de pliegue (para el intervalo de la
+     predicción) y un detector de toros raros (bosque de aislamiento, clase 46).
+
+Uso:  python entrenar_modelos.py            (escribe modelos/modelos_toros.joblib)
+"""
 from datetime import date
 from pathlib import Path
 
@@ -16,7 +32,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 SEMILLA = 2026
-UMBRAL = 0.30                     
+UMBRAL = 0.30                     # umbral de la logística elegido en el TP3 (prioriza no perder toros top)
 PREDICTORAS = ["PesoNacer_DEP", "PesoDestete_DEP", "AptitudMaterna_DEP", "CircEscrotal_DEP", "Anio_Nacimiento"]
 NOMBRES = {"PesoNacer_DEP": "DEP peso al nacer (kg)", "PesoDestete_DEP": "DEP peso al destete (kg)",
            "AptitudMaterna_DEP": "DEP aptitud materna (kg)", "CircEscrotal_DEP": "DEP circunferencia escrotal (cm)",
@@ -27,12 +43,12 @@ SALIDA = CARPETA / "modelos" / "modelos_toros.joblib"
 
 
 def flujo(modelo):
-    
+    """Imputar con la mediana + escalar + modelo, en un solo objeto (sin fuga de información)."""
     return Pipeline([("imputar", SimpleImputer(strategy="median")), ("escalar", StandardScaler()), ("modelo", modelo)])
 
 
 def nombrar_grupos(centros):
-    
+    """Nombra los 3 grupos de K-Means con el mismo criterio del TP3."""
     viejo = int(centros["Anio_Nacimiento"].idxmin())
     resto = [g for g in range(len(centros)) if g != viejo]
     crec = max(resto, key=lambda g: centros.loc[g, "PesoDestete_DEP"])
@@ -44,7 +60,7 @@ def entrenar_raza(toros, raza):
     d = toros[toros["Raza"] == raza].reset_index(drop=True)
     X, y_kg, y_top = d[PREDICTORAS], d["Peso18Meses_DEP"], d["top10"]
 
-  
+    # ---- 1. Evaluación, igual que en los TP (para informar en la app y en el artículo)
     Xe, Xp, ye, yp = train_test_split(X, y_kg, test_size=0.2, random_state=SEMILLA)
     lin = flujo(LinearRegression()).fit(Xe, ye); pred = lin.predict(Xp)
     cv_rmse = -cross_val_score(flujo(LinearRegression()), Xe, ye, cv=KFold(5, shuffle=True, random_state=SEMILLA),
@@ -64,7 +80,7 @@ def entrenar_raza(toros, raza):
         met_cla[f"umbral {u}"] = {"exactitud": float(accuracy_score(tp, s)), "precisión": float(precision_score(tp, s)),
                                   "exhaustividad": float(recall_score(tp, s)), "F1": float(f1_score(tp, s))}
 
-    
+    # ---- 2. Modelos finales con todos los toros de la raza
     regresion = flujo(LinearRegression()).fit(X, y_kg)
     clasificador = flujo(LogisticRegression(max_iter=1000)).fit(X, y_top)
     prep = Pipeline([("imputar", SimpleImputer(strategy="median")), ("escalar", StandardScaler())]).fit(X)
@@ -74,7 +90,8 @@ def entrenar_raza(toros, raza):
     nombres = nombrar_grupos(centros)
     rareza = IsolationForest(n_estimators=200, random_state=SEMILLA).fit(Z)
 
-    
+    # ---- 3. Lo que la app necesita para validar y dar contexto
+    # residuos fuera de pliegue: cada toro predicho por un modelo que no lo vio -> intervalo honesto
     residuos = (y_kg - cross_val_predict(flujo(LinearRegression()), X, y_kg, cv=KFold(5, shuffle=True, random_state=SEMILLA))).to_numpy()
     prob_oof = cross_val_predict(flujo(LogisticRegression(max_iter=1000)), X, y_top,
                                  cv=StratifiedKFold(5, shuffle=True, random_state=SEMILLA), method="predict_proba")[:, 1]
