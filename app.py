@@ -1,15 +1,4 @@
-"""
-Toros 18 · ¿Qué tan bueno va a ser este toro a los 18 meses?
-Aplicación del TP4 de Aprendizaje Automático y Grandes Datos (UNRaf, 2026).
 
-Despliega los tres modelos elegidos en los TP2 y TP3, entrenados con los sumarios de padres 2026
-de Braford y Brangus:
-  - regresión lineal  -> DEP de peso a los 18 meses (kg)
-  - regresión logística -> probabilidad de estar en el 10 % superior (RANK <= 10) a los 18 meses
-  - K-Means (k = 3)   -> perfil del toro
-
-Para correrla:  streamlit run app.py
-"""
 from datetime import date, datetime
 from io import StringIO
 from pathlib import Path
@@ -27,8 +16,7 @@ RUTA_MODELOS = CARPETA / "modelos" / "modelos_toros.joblib"
 RUTA_REGISTRO = CARPETA / "registros" / "predicciones.csv"
 REPOSITORIO = "https://github.com/GinoFicetto/toros-app"
 
-# Límites duros: valores fuera de esto no tienen sentido para una DEP o un año de nacimiento.
-# Los límites "blandos" (lo que se observó en el sumario) se leen del modelo y solo generan un aviso.
+
 LIMITES = {"PesoNacer_DEP": (-8.0, 8.0), "PesoDestete_DEP": (-60.0, 60.0), "AptitudMaterna_DEP": (-30.0, 30.0),
            "CircEscrotal_DEP": (-3.0, 5.0), "Anio_Nacimiento": (1960, date.today().year)}
 PASO = {"PesoNacer_DEP": 0.01, "PesoDestete_DEP": 0.1, "AptitudMaterna_DEP": 0.1, "CircEscrotal_DEP": 0.01, "Anio_Nacimiento": 1}
@@ -43,7 +31,7 @@ BORDO, GRIS = "#7a1f1f", "#9ca3af"
 st.set_page_config(page_title="Toros 18 · Braford y Brangus", page_icon="🐂", layout="wide")
 
 
-# ------------------------------------------------------------------ carga del modelo
+
 @st.cache_resource(show_spinner="Cargando los modelos...")
 def cargar_modelos():
     """Carga el archivo serializado. Si no se puede abrir (por ejemplo, otra versión de scikit-learn),
@@ -53,7 +41,7 @@ def cargar_modelos():
         if paquete.get("version_sklearn") != sklearn.__version__:
             raise ValueError("versión distinta de scikit-learn")
         return paquete, None
-    except Exception as error:                                   # noqa: BLE001 (cualquier falla -> reentrenar)
+    except Exception as error:                                  
         from entrenar_modelos import entrenar_todo
         return entrenar_todo(CARPETA / "datos" / "toros_braford_brangus.csv"), str(error)
 
@@ -62,7 +50,7 @@ paquete, aviso_carga = cargar_modelos()
 PRED, NOMBRES, UMBRAL = paquete["predictoras"], paquete["nombres"], paquete["umbral"]
 
 
-# ------------------------------------------------------------------ funciones del modelo
+
 def fmt(x, d=1):
     """Número con coma decimal, como se escribe en Argentina."""
     return f"{x:,.{d}f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -80,15 +68,15 @@ def analizar(tabla, R):
     Z = R["preparar"].transform(X)
     grupo = [R["nombres_grupo"][g] for g in R["kmeans"].predict(Z)]
     rareza = R["rareza"].score_samples(Z)
-    pct_raro = np.array([(R["rareza_ref"] > s).mean() * 100 for s in rareza])       # % de toros de la raza más "normales"
-    lo, hi = np.quantile(R["residuos"], [0.10, 0.90])                                # intervalo del 80 % con residuos reales
+    pct_raro = np.array([(R["rareza_ref"] > s).mean() * 100 for s in rareza])       
+    lo, hi = np.quantile(R["residuos"], [0.10, 0.90])                                
     return pd.DataFrame({"DEP 18 meses estimada (kg)": kg, "rango probable desde (kg)": kg + lo, "rango probable hasta (kg)": kg + hi,
                          "probabilidad top 10 %": prob, "decisión": [decision(p)[0] for p in prob], "perfil": grupo,
                          "rareza (percentil)": pct_raro}, index=tabla.index)
 
 
 def decision(p):
-    """Traduce la probabilidad a una frase y un color. El corte de 0,30 es el umbral elegido en el TP3."""
+   
     if p >= 0.5:
         return "Muy probable top 10 %", "#2e8b57"
     if p >= UMBRAL:
@@ -97,7 +85,7 @@ def decision(p):
 
 
 def avisos_de_rango(fila, R):
-    """Avisos (no errores) cuando un valor está fuera de lo observado en el sumario de la raza."""
+   
     avisos = []
     for c in PRED:
         r = R["rangos"][c]
@@ -109,7 +97,7 @@ def avisos_de_rango(fila, R):
 
 
 def registrar(filas, origen, razas):
-    """Guarda cada análisis en registros/predicciones.csv (monitoreo básico). Si no se puede escribir, sigue igual."""
+   
     try:
         RUTA_REGISTRO.parent.mkdir(exist_ok=True)
         filas = filas.copy()
@@ -121,7 +109,7 @@ def registrar(filas, origen, razas):
         pass
 
 
-# ------------------------------------------------------------------ barra lateral
+
 with st.sidebar:
     st.header("🐂 Toros 18")
     raza = st.radio("Raza del toro", ["Braford", "Brangus"], horizontal=True,
@@ -153,9 +141,9 @@ st.markdown(
 
 tab_uno, tab_lote, tab_info, tab_reg = st.tabs(["🐂 Analizar un toro", "📄 Muchos toros (CSV)", "ℹ️ Cómo funciona", "📝 Registro"])
 
-# ================================================================== 1. UN TORO
+
 with tab_uno:
-    clave = f"{raza}_{toro_real['Nombre'] if toro_real is not None else 'mano'}"      # cambia el toro -> se recargan los valores
+    clave = f"{raza}_{toro_real['Nombre'] if toro_real is not None else 'mano'}"      
     base = {c: (toro_real[c] if toro_real is not None and pd.notna(toro_real[c]) else R["rangos"][c]["mediana"]) for c in PRED}
     with st.form("formulario"):
         st.subheader("Datos del toro")
@@ -205,7 +193,7 @@ with tab_uno:
             st.metric("Tipo de toro", perfil)
             st.caption(f"En ese grupo hay {int(pf['toros'])} toros del sumario y el {pct(pf['pct_top'])} es top 10 %.")
 
-        # --- confiabilidad
+       
         avisos = avisos_de_rango(fila.iloc[0], R)
         if res["rareza (percentil)"] >= 98:
             avisos.append(f"La combinación de DEP es **muy poco común**: es más rara que el {fmt(res['rareza (percentil)'], 0)} % de los toros "
@@ -221,7 +209,7 @@ with tab_uno:
                     f"{int(real['Peso18Meses_RANK'])} ({'top 10 %' if real['top10'] else 'no top 10 %'}). Ojo: este toro se usó para "
                     "entrenar el modelo, así que la comparación es optimista.", icon="📘")
 
-        # --- gráficos de contexto
+       
         g1, g2 = st.columns([1.35, 1])
         with g1:
             dist = R["referencia"]["Peso18Meses_DEP"]
@@ -246,7 +234,7 @@ with tab_uno:
             st.plotly_chart(fig, width="stretch")
             st.caption("La raya negra marca el umbral de 30 %: desde ahí el toro se considera candidato.")
 
-        # --- explicabilidad: aporte de cada DEP
+        
         with st.expander("¿Por qué da este resultado? (aporte de cada dato)", expanded=True):
             z = R["preparar"].transform(fila[PRED].astype(float))[0]
             aporte_kg = np.array([R["coef_regresion"][c] for c in PRED]) * z
@@ -268,7 +256,7 @@ with tab_uno:
                         + ", ".join(f"{r.dato.split(' (')[0]} ×{fmt(r.chances, 2)}" for r in tabla_ap.sort_values('chances', ascending=False).itertuples()) + ".")
             st.caption("Los dos modelos son lineales, así que esta descomposición es exacta (coeficiente × valor estandarizado).")
 
-# ================================================================== 2. MUCHOS TOROS
+
 with tab_lote:
     st.subheader("Analizar muchos toros con un archivo CSV")
     st.markdown("El archivo tiene que tener una fila por toro y estas columnas (los nombres tal cual): "
@@ -281,7 +269,7 @@ with tab_lote:
         try:
             crudo = archivo.getvalue().decode("utf-8-sig")
             lote = pd.read_csv(StringIO(crudo), sep=None, engine="python")
-        except Exception as error:                                       # noqa: BLE001
+        except Exception as error:                                      
             st.error(f"No se pudo leer el archivo como CSV ({error}).")
             lote = None
         if lote is not None:
@@ -302,7 +290,7 @@ with tab_lote:
                     if pd.api.types.is_numeric_dtype(original):
                         num = original.astype(float)
                         escrito = original.notna()
-                    else:                                                # texto: admite coma decimal
+                    else:                                                
                         texto = original.astype("string").str.strip()
                         escrito = texto.notna() & (texto != "")
                         num = pd.to_numeric(texto.str.replace(",", ".", regex=False), errors="coerce").astype(float)
@@ -348,7 +336,7 @@ with tab_lote:
                     ok_log = salida.loc[~invalida]
                     registrar(ok_log[PRED + ["DEP 18 meses estimada (kg)", "probabilidad top 10 %", "perfil"]], "csv", ok_log["Raza"].values)
 
-# ================================================================== 3. CÓMO FUNCIONA
+
 with tab_info:
     st.subheader("Cómo funciona")
     st.markdown(f"""
@@ -386,7 +374,7 @@ datos son de un solo año de sumario (2026); si cambia la evaluación genética,
 Autores: Gino Ficetto y Bautista Ferrer.
 """ + (f"Código y datos: [{REPOSITORIO}]({REPOSITORIO})." if "USUARIO" not in REPOSITORIO else ""))
 
-# ================================================================== 4. REGISTRO
+
 with tab_reg:
     st.subheader("Registro de análisis (monitoreo)")
     st.caption("Cada análisis se guarda con fecha, datos de entrada y resultado. Sirve para ver cómo se usa la aplicación y si los "
