@@ -25,7 +25,7 @@ import streamlit as st
 CARPETA = Path(__file__).parent
 RUTA_MODELOS = CARPETA / "modelos" / "modelos_toros.joblib"
 RUTA_REGISTRO = CARPETA / "registros" / "predicciones.csv"
-REPOSITORIO = "https://github.com/USUARIO/toros-app"          # se reemplaza al subirlo a GitHub
+REPOSITORIO = "https://github.com/GinoFicetto/toros-app"
 
 # Límites duros: valores fuera de esto no tienen sentido para una DEP o un año de nacimiento.
 # Los límites "blandos" (lo que se observó en el sumario) se leen del modelo y solo generan un aviso.
