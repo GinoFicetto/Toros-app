@@ -46,7 +46,7 @@ datos/toros_braford_brangus.csv  datos limpios (salida del TP1)
 ejemplos/toros_ejemplo.csv  archivo de ejemplo para la carga masiva
 notebooks/                  cuadernos de los TP1, TP2 y TP3, con sus datos
 pruebas/test_app.py         pruebas automáticas de la aplicación
-requirements.txt            librerías con versión fija
+requirements.txt            todas las librerías (aplicación y cuadernos), con versión fija
 .streamlit/config.toml      colores y opciones de la aplicación
 ```
 
@@ -77,7 +77,7 @@ Para correr las pruebas: `python pruebas/test_app.py`.
 
 ## Cuadernos
 
-En `notebooks/` están los tres trabajos anteriores, ejecutados y reproducibles (abrirlos desde esa carpeta y usar *Run All*):
+En `notebooks/` están los tres trabajos anteriores, ejecutados y reproducibles. Con las librerías de `requirements.txt` ya instaladas (ver arriba), abrir cada cuaderno desde la carpeta `notebooks/` (Jupyter o VS Code) y usar *Run All*:
 
 - `TP1_exploracion_toros.ipynb`: calidad de datos, limpieza, exploración y elección del toro líder.
 - `TP2_regresion_toros.ipynb`: regresión (lineal, k vecinos y Random Forest).
